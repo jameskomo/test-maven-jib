@@ -1,0 +1,21 @@
+image: maven:latest
+
+variables:
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version --no-transfer-progress"
+
+stages:
+  - build
+
+cache:
+  paths:
+    - .m2/repository/
+
+build-container:
+  stage: build
+  script:
+    - echo $CI_REGISTRY_IMAGE
+    - mvn $MAVEN_CLI_OPTS clean package -DskipTests -Djib.skip=false -Djib.to.image=$CI_REGISTRY_IMAGE -Djib.to.auth.username=$CI_REGISTRY_USER -Djib.to.auth.password=$CI_REGISTRY_PASSWORD
+
+  only:
+    - branches
+    - tags
