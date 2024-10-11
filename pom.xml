@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.example</groupId>
+	<artifactId>demo</artifactId>
+	<version>0.0.3-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
+	<name>demo</name>
+	<description>Demo project for Spring Boot maven jib plugin</description>
+
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.0.0</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+
+    <properties>
+
+        <!-- BUILD -->
+        <java.version>17</java.version>
+
+        <jib-maven-plugin.version>3.4.3</jib-maven-plugin.version>
+        <jib.skip>true</jib.skip>
+    </properties>
+
+    <dependencies>
+        <!-- SPRING BOOT -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <!-- TEST -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>get-git-infos</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <verbose>false</verbose>
+                    <dotGitDirectory>${project.basedir}/.git</dotGitDirectory>
+                    <prefix>git</prefix>
+                    <dateFormat>yyyy-MM-dd HH:mm:ssZ</dateFormat>
+                    <dateFormatTimeZone>${user.timezone}</dateFormatTimeZone>
+                    <replacementProperties>
+                        <!-- replace invalid characters within branch name to set it as docker tag -->
+                        <replacementProperty>
+                            <transformationRules>
+                                <transformationRule>
+                                    <apply>BEFORE</apply>
+                                    <action>LOWER_CASE</action>
+                                </transformationRule>
+                            </transformationRules>
+                            <property>git.branch</property>
+                            <token>[^a-z0-9\-]</token>
+                            <value>-</value>
+                            <regex>true</regex>
+                        </replacementProperty>
+                        <replacementProperty>
+                            <property>git.branch</property>
+                            <token>[-]{2,}</token>
+                            <value>-</value>
+                            <regex>true</regex>
+                        </replacementProperty>
+                    </replacementProperties>
+                    <gitDescribe>
+                        <skip>false</skip>
+                        <always>false</always>
+                        <abbrev>8</abbrev>
+                        <dirty>-dirty</dirty>
+                        <match>*</match>
+                        <tags>false</tags>
+                        <forceLongFormat>false</forceLongFormat>
+                    </gitDescribe>
+                    <abbrevLength>8</abbrevLength>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <version>${jib-maven-plugin.version}</version>
+                <configuration>
+                    <from>
+                        <image>eclipse-temurin:21-alpine</image>
+                    </from>
+                    <to>
+                        <image>tobe:overwritten</image>
+                        <!--the image destination gets overwritten in the gitlab pipeline-->
+                        <tags>
+                            <tag>latest</tag>
+                            <tag>${project.version}</tag>
+                            <!--suppress UnresolvedMavenProperty - exists during build phase (git-commit-id-plugin) -->
+                            <tag>${git.commit.id.abbrev}</tag>
+                            <!--suppress UnresolvedMavenProperty - exists during build phase (git-commit-id-plugin) -->
+                            <tag>${git.branch}</tag>
+                        </tags>
+                    </to>
+                    <container>
+                        <ports>
+                            <port>11011</port>
+                        </ports>
+                    </container>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
